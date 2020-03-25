@@ -10,3 +10,6 @@ After python 3 is installed you should install Pillow and Imagehash using the fo
  To run the program, simply cd to where the file is located in your terminal and type
 
  `python3 main.py`
+
+ LINK TO DEMO VIDEO: https://drive.google.com/file/d/1A6NgRkff3JZLpxFAoGCkxfJIzgOlYP5j/view?usp=sharing
+
