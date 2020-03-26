@@ -63,7 +63,7 @@ def loadImagesSideBySide():
 
         # resizing images
         h1, w1 = openImage.size
-        maxSize = int(1000/len(listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]))
+        maxSize = int(800/len(listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]))
         scale = 1.1
         while(h1 > maxSize or w1 > maxSize):
             h1 = int(h1/scale)
@@ -139,16 +139,26 @@ def getSameImagesFromDB():
     c.execute("SELECT hash, COUNT(*) FROM pathandhashtb GROUP BY hash HAVING COUNT(*) >= 2")
     nonUniqueHashes = c.fetchall()
 
-    for hsh in nonUniqueHashes:
-        tempPath = []
-        c.execute("SELECT path FROM pathandhashtb WHERE hash = ?", (hsh[0], ))
-        pathsOfImagesWithSameHash = c.fetchall()
+    if len(nonUniqueHashes) > 0:
+        for hsh in nonUniqueHashes:
+            tempPath = []
+            c.execute("SELECT path FROM pathandhashtb WHERE hash = ?", (hsh[0], ))
+            pathsOfImagesWithSameHash = c.fetchall()
 
-        for path in pathsOfImagesWithSameHash:
-            tempPath.append(path[0])
-        listOfImagesWithTheSameHash.append(tempPath)
+            for path in pathsOfImagesWithSameHash:
+                tempPath.append(path[0])
+            listOfImagesWithTheSameHash.append(tempPath)
+        showImagesSideBySide()
+    else:
+        for widget in root.winfo_children():
+            widget.destroy()
 
-    showImagesSideBySide()
+        labelSelectAFolder = Label(root, text="Could not find any identical images in folder")
+        labelSelectAFolder.place(relx=0.5, rely=0.5, anchor=CENTER)
+
+        btnClose = Button(root, text="Close", command=lambda: rootDestroy())
+        btnClose.config(height=2, width=7)
+        btnClose.place(relx=1, rely=1, anchor=SE)
 
 
 # displays label and progress bar
@@ -200,19 +210,40 @@ def hashSlashAndStoreWithPath(topFolderPath, numberOfFiles):
 
     getSameImagesFromDB()
 
+def rootDestroy():
+    global root
+    root.destroy()
+
 # runs after folder is selected from folder dialog pop up
 # parses through entire directory to find all suitable images
 # counts total number of suitable images
 # this is mainly done for the prgress bar when hashing
 def setTotalNumberOfFilesToHash(userFolderPath):
+    global root
     totalNumberOfFilesToHash = 0
     ext = ["rgb", "gif", "pbm", "pgm", "ppm", "tiff", "rast", "xbm", "jpeg", "bmp", "png", "webp", "exr"]
+
     for dirpath, dirs, files in os.walk(userFolderPath):
         for fil in files:
             fname = os.path.join(dirpath, fil)
             if str(imghdr.what(str(fname))) in ext:
                 totalNumberOfFilesToHash = totalNumberOfFilesToHash + 1
-    hashSlashAndStoreWithPath(userFolderPath, totalNumberOfFilesToHash)
+    
+    if totalNumberOfFilesToHash > 0:
+        hashSlashAndStoreWithPath(userFolderPath, totalNumberOfFilesToHash)
+    else:
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        labelSelectAFolder = Label(root, text="Could not find any images in folder")
+        labelSelectAFolder.place(relx=0.5, rely=0.5, anchor=CENTER)
+
+        btnClose = Button(root, text="Close", command=lambda: rootDestroy())
+        btnClose.config(height=2, width=7)
+        btnClose.place(relx=1, rely=1, anchor=SE)
+
+
+        
 
 # run when browser button is clicked
 # brings up folder dialog pop up so user can select folder
@@ -240,7 +271,7 @@ def createBrowserWindow():
 
     # add a button to browse a folder
     btnBrowse = Button(root, text="Browse Folder", command=setUserFolderPath)
-    btnBrowse.config(height=2, width=10)
+    btnBrowse.config(height=2, width=11)
     btnBrowse.place(relx=0.5, rely=0.5, anchor=CENTER)
 
     root.mainloop()
