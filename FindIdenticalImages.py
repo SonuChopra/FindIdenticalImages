@@ -50,9 +50,12 @@ def loadImagesSideBySide():
     global root
     global pathOfImagesToDelete
 
-    row = 0
     for widget in root.winfo_children():
         widget.destroy()
+
+    row = 1
+    labelClickImageToDelete = Label(root, text="Click image to select")
+    labelClickImageToDelete.grid(row=0, column=0, sticky="W")
     
     for index, path in enumerate(listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]):
         
@@ -62,38 +65,63 @@ def loadImagesSideBySide():
             openImage = openImage.convert('LA')
 
         # resizing images
-        h1, w1 = openImage.size
-        maxSize = int(800/len(listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]))
-        scale = 1.1
-        while(h1 > maxSize or w1 > maxSize):
-            h1 = int(h1/scale)
-            w1 = int(w1/scale)
-        openImage = openImage.resize((h1, w1), Image.ANTIALIAS)
+        oldH, oldW = openImage.size
+        maxSizeHeight = int(1000/len(listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]))
+        maxSizeWidth = int(600/len(listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]))
+        
+        newH = oldH
+        countH = 0
+        while(newH > maxSizeHeight):
+            newH = newH - 2
+            countH = countH + 1
+
+        newW = oldW
+        countW = 0
+        while(newW > maxSizeWidth):
+            newW = newW - 2
+            countW = countW + 1
+
+        if countH > countW:
+            newW = oldW*newH/oldH
+        else:
+            newH = oldH*newW/oldW
+        
+        resizedOpenImage = openImage.resize((int(newH), int(newW)), Image.ANTIALIAS)
 
         # displaying path of each image
+
         textFilePath = str(path)
-        labelSelectAFolder = Label(root, text=textFilePath)
-        labelSelectAFolder.grid(row=row, column=0)
+        labelSelectAFolder = Label(root, text=textFilePath, wraplength=200)
+        labelSelectAFolder.grid(row=row, column=1, sticky="W")
+
+        if path in pathOfImagesToDelete:
+            labelSelectAFolder = labelSelectAFolder.config(fg = "red")
 
         # displaying image itself
-        renderImage = ImageTk.PhotoImage(openImage)
+        renderImage = ImageTk.PhotoImage(resizedOpenImage)
         img = Label(root, image=renderImage)
         img.image = renderImage
-        img.grid(row=(row+1), column=0)
-        
-        # changing button text when clicked
-        deleteBtnText = "Delete"
-        if path in pathOfImagesToDelete:
-            deleteBtnText = "Dont Delete"
 
-        btnDeleteImg = Button(root, text=deleteBtnText, command=lambda currPath=path: addToPathOfImagesToDelete(currPath))
-        btnDeleteImg.config( height = 3, width = 9)
-        btnDeleteImg.grid(row=(row+1), column=2)
-        row = row + 2
+        btnDeleteImg = Button(root, image=renderImage, command=lambda currPath=path: addToPathOfImagesToDelete(currPath))
+        # btnDeleteImg.config( height = 3, width = 9)
+        btnDeleteImg.grid(row=row, column=0, sticky="W")
+        row = row + 1
 
-    btnnext = Button(root, text="Next", command=lambda: showNextImages())
-    btnnext.config( height = 12, width = 8)
-    btnnext.place(relx=1, rely=0.5, anchor=SE)
+    count = 0
+    for pathOfSameHash in listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]:
+        if pathOfSameHash in pathOfImagesToDelete:
+            count = count + 1
+
+    textNext = "DELETE " + str(count) + " IMAGES"
+    btnNext = Button(root, text=textNext, command=lambda: showNextImages())
+    if all(paths in pathOfImagesToDelete for paths in listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]):
+        btnNext = Button(root, text="YOU ARE ABOUT TO DELETE ALL IMAGES", command=lambda: showNextImages())
+    elif all(paths not in pathOfImagesToDelete for paths in listOfImagesWithTheSameHash[listOfImagesWithTheSameHashIndex]):
+        btnNext = Button(root, text="DONT DELETE ANY", command=lambda: showNextImages())
+    btnNext.config( height = 2, width = 35)
+    btnNext.place(relx=0.5, rely=0.97, anchor=CENTER)
+    
+
 
 # take all paths of images in pathOfImagesToDelete
 # move them to delete folder with unizue name
@@ -104,8 +132,18 @@ def cleanUp():
     DELETE_FOLDER_LOCATION = "./delete/"
     count = 0
 
-    # destroy window
-    root.destroy()
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    root.geometry("400x100")
+    textImagesDelete = "Successfully deleted " + str(len(pathOfImagesToDelete)) + " identical images!"
+    labelSelectAFolder = Label(root, text=textImagesDelete)
+    labelSelectAFolder.place(relx=0.5, rely=0.5, anchor=CENTER)
+
+    btnClose = Button(root, text="Close", command=lambda: rootDestroy())
+    btnClose.config(height=2, width=7)
+    btnClose.place(relx=1, rely=1, anchor=SE)
+
     for path in pathOfImagesToDelete:
         currentDateTime = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         shutil.move(path, DELETE_FOLDER_LOCATION)
@@ -115,7 +153,6 @@ def cleanUp():
         count = count + 1
         os.rename(os.path.join(DELETE_FOLDER_LOCATION, oldFileName), os.path.join(DELETE_FOLDER_LOCATION, newFileName))
     conn.close()
-    print("... ended")
 
 # if no more comparisons are left, then cleanup,
 # else load next images
