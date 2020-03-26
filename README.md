@@ -11,5 +11,5 @@ After python 3 is installed you should install Pillow and Imagehash using the fo
 
  `python3 main.py`
 
- LINK TO DEMO VIDEO: https://drive.google.com/file/d/1A6NgRkff3JZLpxFAoGCkxfJIzgOlYP5j/view?usp=sharing
+ LINK TO DEMO VIDEO: https://drive.google.com/file/d/11hb2nxH0S7cqxUjbtZblcKqwwzUnnOV4/view?usp=sharing
 
